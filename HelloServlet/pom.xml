@@ -7,9 +7,32 @@
         <groupId>com.ithan</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>HelloServlet</artifactId>
 
-
+    <!--使用build配置resources-->
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+                <!--开启过滤-->
+                <filtering>true</filtering>
+            </resource>
+            <!--这样一来，java文件夹下的properties也能被包含在项目中-->
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
 </project>

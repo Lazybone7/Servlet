@@ -216,3 +216,387 @@ Location：让网页重新定位
 
 ### HelloServlet
 
+Sun公司赋给Servlet两个默认的实现类：==HttpServlet==、==GenericServlet==
+
+**编写一个Servlet程序：**
+
+*   编写一个普通类
+*   继承HttpServlet
+
+```java
+public class HelloServlet extends HttpServlet{
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        PrintWriter writer = resp.getWriter();
+        writer.print("HelloServlet");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doGet(req,resp);
+    }
+}
+```
+
+*   配置web.xml文件中的servlet
+
+```xml
+	<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+  <!--注册Servlet-->
+    <servlet>
+        <servlet-name>servlet01</servlet-name>
+        <servlet-class>com.itan.HelloServlet</servlet-class>
+    </servlet>
+  <!--Servlet的请求路径-->
+    <servlet-mapping>
+        <servlet-name>servlet01</servlet-name>
+        <url-pattern>/hello</url-pattern>
+    </servlet-mapping>
+</web-app>
+```
+
+*   配置Tomcat
+
+### Servlet原理
+
+servlet由web服务器调用,web服务器在收到请求后
+
+### Mapping问题
+
+1.  一个Servlet可以指定一个映射路径
+
+```xml
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/hello</url-pattern>
+</servlet-mapping>
+```
+
+2.  一个Servlet可以指定多个映射路径
+
+```xml
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/hello</url-pattern>
+</servlet-mapping>
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/hello1</url-pattern>
+</servlet-mapping>
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/hello2</url-pattern>
+</servlet-mapping>
+```
+
+3.  一个Servlet可以指定通用映射路径
+
+```xml
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/hello/*</url-pattern>
+</servlet-mapping>
+```
+
+4.  默认请求路径
+
+```xml
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/*</url-pattern>
+</servlet-mapping>
+```
+
+5.  指定一些后缀或者前缀等等...
+
+```xml
+<!--可以自定义后缀实现请求映射
+	*前面不能加项目映射的路径
+-->
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>*.do</url-pattern>
+</servlet-mapping>
+```
+
+**优先级:**
+
+固有的映射路径优先级最高.
+
+```xml
+<servlet>
+    <servlet-name>servlet01</servlet-name>
+    <servlet-class>com.itan.HelloServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+    <servlet-name>servlet01</servlet-name>
+    <url-pattern>/hello</url-pattern>
+</servlet-mapping>
+
+<servlet>
+  <servlet-name>error</servlet-name>
+  <servlet-class>com.itan.ErrorServlet</servlet-class>
+</servlet>
+
+<servlet-mapping>
+  <servlet-name>error</servlet-name>
+  <url-pattern>/*</url-pattern>
+</servlet-mapping>
+```
+
+------
+
+
+
+### ServletContext
+
+>   web容器在启动时,会为每个web程序创建一个新的**ServletContext**对象.它代表了当前的web应用
+
+**作用:**
+
+*   **==共享数据==**	一个Servlet中的数据可以被另一个Servlet获取
+
+```java
+public class HelloServlet extends HttpServlet{
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        ServletContext servletContext = this.getServletContext();
+        //设置属性
+      	servletContext.setAttribute("username","han");
+        PrintWriter writer = resp.getWriter();
+        writer.print("HelloServlet");
+
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        doGet(req,resp);
+    }
+}
+
+public class AttributeServlet extends HttpServlet{
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+       //获取属性
+      	ServletContext servletContext = this.getServletContext();
+        String username = (String) servletContext.getAttribute("username");
+        resp.getWriter().print("username = " + username);
+    }
+}
+```
+
+*   **==初始化参数==**
+
+```java
+/**
+ * 获取web应用的初始化参数
+ */
+public class ParamServlet extends HttpServlet{
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        ServletContext servletContext = this.getServletContext();
+        String url = servletContext.getInitParameter("url");
+        resp.getWriter().print(url);
+    }
+}
+```
+
+```xml
+<!--配置web应用初始化参数-->
+<context-param>
+  <param-name>url</param-name>
+  <param-value>jdbc:mysql://localhost:3306/mysql</param-value>
+</context-param>
+```
+
+*   **==请求转发==**
+
+![image-20211027212720209](E:\LearnNote\Servlet\Servlet.assets\image-20211027212720209.png)
+
+```java
+public class DispatcherServlet extends HttpServlet{
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        ServletContext servletContext = this.getServletContext();
+        servletContext.getRequestDispatcher("/param").forward(req,resp);
+    }
+}
+```
+
+```xml
+<servlet>
+  <servlet-name>getpara</servlet-name>
+  <servlet-class>com.itan.ParamServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+  <servlet-name>getpara</servlet-name>
+  <url-pattern>/param</url-pattern>
+</servlet-mapping>   
+
+<servlet>
+        <servlet-name>dispatcher</servlet-name>
+        <servlet-class>com.itan.DispatcherServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>dispatcher</servlet-name>
+        <url-pattern>/patcher</url-pattern>
+    </servlet-mapping>
+```
+
+*   ==读取配置文件==
+
+```xml
+<!--使用build配置resources-->
+<build>
+  <resources>
+    <resource>
+      <directory>src/main/resources</directory>
+      <includes>
+        <include>**/*.properties</include>
+        <include>**/*.xml</include>
+      </includes>
+      <!--开启过滤-->
+      <filtering>true</filtering>
+    </resource>
+    <!--这样一来，java文件夹下的properties也能被包含在项目中-->
+    <resource>
+      <directory>src/main/java</directory>
+      <includes>
+        <include>**/*.properties</include>
+        <include>**/*.xml</include>
+      </includes>
+      <filtering>true</filtering>
+    </resource>
+  </resources>
+</build>
+```
+
+**类路径:**
+
+![image-20211028191637577](E:\LearnNote\Servlet\Servlet.assets\image-20211028191637577.png)
+
+```java
+//读取配置文件
+/**
+ * 使用ServletContext读取配置文件
+ */
+public class PropertiesServlet extends HttpServlet{
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        InputStream is = this.getServletContext().getResourceAsStream("/WEB-INF/classes/jdbc.properties");
+        Properties pro = new Properties();
+        pro.load(is);
+        String username = pro.getProperty("username");
+        String password = pro.getProperty("password");
+        resp.getWriter().print(username +": "+ password);
+
+    }
+}
+```
+
+------
+
+### Req & Resp 
+
+>   web容器在接收到客户端的请求后,针对这个请求,分别创建一个代表请求的HttpServletRequest对象, 一个代表响应的HttpServletResponse对象
+
+*   想要获取客户端请求来的参数:	==HttpServletRequest==
+*   给客户响应的信息: ==HttpServletResponse==
+
+
+
+#### HttpServletRequest
+
+
+
+#### HttpServletResponse
+
+**方法:**
+
+1.  向浏览器发送数据的方法
+
+```java
+ServletOutputStream getOutputStream() throws IOException;
+PrintWriter getWriter() throws IOException;	
+```
+
+2.  向浏览器发送响应头的方法
+
+```java
+    void setCharacterEncoding(String var1);
+
+    void setContentLength(int var1);
+
+    void setContentType(String var1);
+
+    void sendRedirect(String var1) throws IOException;
+
+    void setDateHeader(String var1, long var2);
+
+    void addDateHeader(String var1, long var2);
+
+    void setHeader(String var1, String var2);
+
+    void addHeader(String var1, String var2);
+
+    void setIntHeader(String var1, int var2);
+
+    void addIntHeader(String var1, int var2);
+```
+
+3.  响应状态码
+
+```java
+    int SC_CONTINUE = 100;
+    int SC_SWITCHING_PROTOCOLS = 101;
+    int SC_OK = 200;
+    int SC_CREATED = 201;
+    int SC_ACCEPTED = 202;
+    int SC_NON_AUTHORITATIVE_INFORMATION = 203;
+    int SC_NO_CONTENT = 204;
+    int SC_RESET_CONTENT = 205;
+    int SC_PARTIAL_CONTENT = 206;
+    int SC_MULTIPLE_CHOICES = 300;
+    int SC_MOVED_PERMANENTLY = 301;
+    int SC_MOVED_TEMPORARILY = 302;
+    int SC_FOUND = 302;
+    int SC_SEE_OTHER = 303;
+    int SC_NOT_MODIFIED = 304;
+    int SC_USE_PROXY = 305;
+    int SC_TEMPORARY_REDIRECT = 307;
+    int SC_BAD_REQUEST = 400;
+    int SC_UNAUTHORIZED = 401;
+    int SC_PAYMENT_REQUIRED = 402;
+    int SC_FORBIDDEN = 403;
+    int SC_NOT_FOUND = 404;
+    int SC_METHOD_NOT_ALLOWED = 405;
+    int SC_NOT_ACCEPTABLE = 406;
+    int SC_PROXY_AUTHENTICATION_REQUIRED = 407;
+    int SC_REQUEST_TIMEOUT = 408;
+    int SC_CONFLICT = 409;
+    int SC_GONE = 410;
+    int SC_LENGTH_REQUIRED = 411;
+    int SC_PRECONDITION_FAILED = 412;
+    int SC_REQUEST_ENTITY_TOO_LARGE = 413;
+    int SC_REQUEST_URI_TOO_LONG = 414;
+    int SC_UNSUPPORTED_MEDIA_TYPE = 415;
+    int SC_REQUESTED_RANGE_NOT_SATISFIABLE = 416;
+    int SC_EXPECTATION_FAILED = 417;
+    int SC_INTERNAL_SERVER_ERROR = 500;
+    int SC_NOT_IMPLEMENTED = 501;
+    int SC_BAD_GATEWAY = 502;
+    int SC_SERVICE_UNAVAILABLE = 503;
+    int SC_GATEWAY_TIMEOUT = 504;
+    int SC_HTTP_VERSION_NOT_SUPPORTED = 505;
+```
+
+**应用:**
+
+*   向浏览器输出信息
+*   下载文件
+
